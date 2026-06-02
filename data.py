@@ -33,8 +33,12 @@ class Dataset_Pro(data.Dataset):
         else:
             H_his = H_his[:, int(train_per * batch):int((train_per + valid_per) * batch), ...]
             H_pre = H_pre[:, int(train_per * batch):int((train_per + valid_per) * batch), ...]
-        H_his = rearrange(H_his, 'v n L k a b c -> (v n) L (k a b c)')
-        H_pre = rearrange(H_pre, 'v n L k a b c -> (v n) L (k a b c)')
+        H_his = rearrange(H_his, 'v n L k a b c d -> (v n) L (k a b c d)')
+        H_pre = rearrange(H_pre, 'v n L k a b c d -> (v n) L (k a b c d)')
+        # Merge UE antennas: [B,T,48*4*4*4*2] -> mean over Nr -> [B,T,48*4*4*2]=[B,T,1536]
+        H_his = H_his.reshape(-1, H_his.shape[1], 48, 4, 4, 4, 2).mean(axis=4).reshape(H_his.shape[0], H_his.shape[1], -1)
+        H_pre = H_pre.reshape(-1, H_pre.shape[1], 48, 4, 4, 4, 2).mean(axis=4).reshape(H_pre.shape[0], H_pre.shape[1], -1)
+
 
         B, prev_len, mul = H_his.shape
         _, pred_len, mul = H_pre.shape

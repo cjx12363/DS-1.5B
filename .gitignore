@@ -1,4 +1,4 @@
-﻿# IDE
+# IDE
 .idea/
 .vscode/
 *.iml
@@ -37,4 +37,5 @@ Thumbs.db
 # Documents
 *.docx
 *.pdf
-dataset_generation/
+# dataset_generation/
+dataset_generation/QuaDRiGa-main/
