@@ -92,7 +92,7 @@ for iter_Speed=1:length(Speed)
         H_D_pre(iter_Speed,ii,:,:,:,:,:,:)=h(17:20,49:96,:,:,:,:); % future downlink CSI
     end
 end
-save('E:\\cjx12363\\LLM4CP-DS\\data\\H_U_his_train.mat', 'H_U_his', '-v7.3');
-save('E:\\cjx12363\\LLM4CP-DS\\data\\H_U_pre_train.mat', 'H_U_pre', '-v7.3');
-save('E:\\cjx12363\\LLM4CP-DS\\data\\H_D_pre_train.mat', 'H_D_pre', '-v7.3');
-fprintf('Saved to data/\\n');
+save('E:\\cjx12363\\LLM4CP-DS\\data\\train\\H_U_his_train.mat', 'H_U_his', '-v7.3');
+save('E:\\cjx12363\\LLM4CP-DS\\data\\train\\H_U_pre_train.mat', 'H_U_pre', '-v7.3');
+save('E:\\cjx12363\\LLM4CP-DS\\data\\train\\H_D_pre_train.mat', 'H_D_pre', '-v7.3');
+fprintf('Saved to data/train/\\n');
