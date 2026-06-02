@@ -134,8 +134,8 @@ class Model(nn.Module):
 
     def _init_deepseek_student(self, model_name, gpt_layers, use_lora, lora_r, lora_alpha, lora_dropout):
         model_map = {
-            'deepseek-1.5b': 'deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B',
-            'deepseek-7b': 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
+            'deepseek-1.5b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-1.5B',
+            'deepseek-7b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-7B',
         }
         model_path = model_map.get(model_name, model_name)
         print(f'[Student] Loading {model_path} ...')
@@ -180,8 +180,8 @@ class Model(nn.Module):
 
     def _init_teacher(self, teacher_type):
         model_map = {
-            'deepseek-7b': 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
-            'deepseek-1.5b': 'deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B',
+            'deepseek-7b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-7B',
+            'deepseek-1.5b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-1.5B',
         }
         model_path = model_map.get(teacher_type, teacher_type)
         print(f'[Teacher] Loading {model_path} ...')
