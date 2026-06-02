@@ -1,4 +1,4 @@
-﻿import os
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -44,9 +44,9 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--gpu_id', type=int, default=0)
     parser.add_argument('--teacher_gpu_id', type=int, default=None)
-    parser.add_argument('--train_r_path', type=str, default='./H_U_his_train.mat')
-    parser.add_argument('--train_t_path', type=str, default='./H_U_pre_train.mat')
-    parser.add_argument('--train_t_path_fdd', type=str, default='./H_D_pre_train.mat')
+    parser.add_argument('--train_r_path', type=str, default='./data/H_U_his_train.mat')
+    parser.add_argument('--train_t_path', type=str, default='./data/H_U_pre_train.mat')
+    parser.add_argument('--train_t_path_fdd', type=str, default='./data/H_D_pre_train.mat')
     parser.add_argument('--save_dir', type=str, default='./Weights')
     parser.add_argument('--save_name', type=str, default='LLM4CP_DS.pth')
     parser.add_argument('--resume', type=str, default=None)

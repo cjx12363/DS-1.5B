@@ -24,6 +24,7 @@ Weights/
 *.ckpt
 
 # Data files
+data/
 *.mat
 *.h5
 *.zip
