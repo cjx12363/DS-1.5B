@@ -1,4 +1,4 @@
-﻿% Test data generation: UMa + UMi scenarios
+% Test data generation: UMa + UMi scenarios
 clc;clear;close all;
 
 out_dir = 'E:\cjx12363\LLM4CP-DS\data\test\';
@@ -46,7 +46,7 @@ for sc = 1:2
             UElocation(:,ind_UE) = [-rho(ind_UE)*cosd(phi(ind_UE)); rho(ind_UE)*sind(phi(ind_UE)); 0]+UEcenter;
         end
 
-        UEtrack = [];
+        UEtrack = qd_track([]);
         for ind_UE = 1:UENum
             UEtrack(1,ind_UE) = qd_track.generate('linear',UETrackLength);
             UEtrack(1,ind_UE).name = num2str(ind_UE);
