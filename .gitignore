@@ -1,0 +1,40 @@
+﻿# IDE
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual env
+venv/
+.venv/
+env/
+ENV/
+
+# Model weights (large binary)
+Weights/
+*.pth
+*.pt
+*.ckpt
+
+# Data files
+*.mat
+*.h5
+*.zip
+*.tar.gz
+test_data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documents
+*.docx
+*.pdf
+dataset_generation/
