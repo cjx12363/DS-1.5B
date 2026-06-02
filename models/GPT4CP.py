@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from transformers import AutoModel
-from transformers.models.gpt2.modeling_gpt2 import GPT2Model
 from einops import rearrange
 from Embed import DataEmbedding
 
@@ -83,7 +82,6 @@ class Model(nn.Module):
                  pred_len=4, prev_len=16,
                  use_gpu=1, gpu_id=0,
                  teacher_gpu_id=None,
-                 mlp=0,
                  res_layers=4, res_dim=64,
                  K=48, UQh=4, UQv=4, BQh=1, BQv=1,
                  patch_size=4, stride=1,
@@ -92,7 +90,6 @@ class Model(nn.Module):
         self.device = torch.device('cuda:{}'.format(gpu_id))
         self.teacher_gpu_id = teacher_gpu_id if teacher_gpu_id is not None else gpu_id
         self.teacher_device = torch.device('cuda:{}'.format(self.teacher_gpu_id))
-        self.mlp = mlp
         self.res_layers = res_layers
         self.pred_len = pred_len
         self.prev_len = prev_len
@@ -112,10 +109,7 @@ class Model(nn.Module):
         self.enc_in = K * UQh * UQv * BQh * BQv
         self.c_out = K * UQh * UQv * BQh * BQv
         self.enc_embedding1 = DataEmbedding(2 * self.enc_in, self.d_model, embed, freq, dropout)
-        if gpt_type.startswith('deepseek'):
-            self._init_deepseek_student(gpt_type, gpt_layers, use_lora, lora_r, lora_alpha, lora_dropout)
-        else:
-            self._init_gpt2_student(gpt_type, gpt_layers)
+        self._init_deepseek_student(gpt_type, gpt_layers, use_lora, lora_r, lora_alpha, lora_dropout)
         self.teacher = None
         if use_kd and teacher_type is not None:
             self._init_teacher(teacher_type)
@@ -159,31 +153,11 @@ class Model(nn.Module):
         if hasattr(self, 'device'):
             self.llm.to(device=self.device)
 
-    def _init_gpt2_student(self, gpt_type, gpt_layers):
-        gpt_configs = {
-            'gpt2': ('gpt2', 768), 'gpt2-medium': ('gpt2-medium', 1024),
-            'gpt2-large': ('gpt2-large', 1280), 'gpt2-xl': ('gpt2-xl', 1600),
-        }
-        model_id, hidden_dim = gpt_configs.get(gpt_type, gpt_configs['gpt2'])
-        self.llm = GPT2Model.from_pretrained(model_id, output_attentions=True, output_hidden_states=True)
-        self.llm.h = self.llm.h[:gpt_layers]
-        self.gpt_dim = hidden_dim
-        for name, param in self.llm.named_parameters():
-            if any(k in name for k in ['ln', 'wpe', 'attn', 'c_attn']):
-                param.requires_grad = True
-            elif 'mlp' in name and self.mlp == 1:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
-        if hasattr(self, 'device'):
-            self.llm.to(device=self.device)
-
-    def _init_teacher(self, teacher_type):
         model_map = {
             'deepseek-7b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-7B',
             'deepseek-1.5b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-1.5B',
         }
-        model_path = model_map.get(teacher_type, teacher_type)
+        model_path = model_map.get(model_name, model_name)
         print(f'[Teacher] Loading {model_path} ...')
         self.teacher = AutoModel.from_pretrained(
             model_path, trust_remote_code=True, output_hidden_states=True, torch_dtype=torch.float32)
@@ -258,14 +232,3 @@ class Model(nn.Module):
 
 if __name__ == '__main__':
     import torch
-    print('=== Testing with GPT-2 (backward compat) ===')
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = Model(gpt_type='gpt2', d_ff=768, d_model=768,
-                  UQh=1, UQv=1, BQh=1, BQv=1, use_kd=False).to(device)
-    inputs = torch.rand(3, 16, 96).to(device)
-    out = model(inputs, None, None, None)
-    print(f'Input: {inputs.shape} -> Output: {out.shape}')
-    total = sum([p.nelement() for p in model.parameters()])
-    print(f'Params: {total/1e6:.3f}M')
-    total_learn = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f'Trainable: {total_learn/1e6:.3f}M')
