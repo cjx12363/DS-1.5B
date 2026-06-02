@@ -2,6 +2,7 @@
 LLM4CP-DS FDD Test Script
 """
 import time
+import argparse
 import torch
 import numpy as np
 from data import LoadBatch_ofdm_1, LoadBatch_ofdm_2, noise, Transform_TDD_FDD
@@ -11,14 +12,17 @@ import hdf5storage
 from models.LLM4CP import Model
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--scenario", type=str, default="UMa", choices=["UMa", "UMi"])
+    args = parser.parse_args()
     device = torch.device('cuda:0')
     is_U2D = 1
-    prev_path = "./test_data/H_U_his_test.mat"
-    pred_path = "./test_data/H_D_pre_test.mat"
+    prev_path = "./data/test/" + args.scenario + "_H_U_his_test.mat"
+    pred_path = "./data/test/" + args.scenario + "_H_D_pre_test.mat"
     model_path = './Weights/LLM4CP_DS_FDD.pth'
 
     prev_len, pred_len = 16, 4
-    K, Nt, Nr = 48, 16, 1
+    K, Nt, Nr = 48, 16, 4
 
     criterion = NMSELoss()
     criterion_se = SE_Loss(snr=10, device=device)
@@ -38,7 +42,9 @@ if __name__ == "__main__":
         test_loss_stack, test_se_stack, test_se0_stack = [], [], []
         test_data_prev = test_data_prev_base[[speed], ...]
         test_data_pred = test_data_pred_base[[speed], ...]
+        test_data_prev = test_data_prev.mean(axis=6)  # merge UE Nr=4
         test_data_prev = rearrange(test_data_prev, 'v b l k n m c -> (v b c) (n m) l (k)')
+        test_data_pred = test_data_pred.mean(axis=6)  # merge UE Nr=4
         test_data_pred = rearrange(test_data_pred, 'v b l k n m c -> (v b c) (n m) l (k)')
         std = np.sqrt(np.std(np.abs(test_data_prev) ** 2))
         test_data_prev = test_data_prev / std
