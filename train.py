@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from data import Dataset_Pro
-from models.GPT4CP import Model
+from models.LLM4CP import Model
 import numpy as np
 import shutil
 import argparse
@@ -18,9 +18,9 @@ def parse_args():
     parser.add_argument('--mode', type=str, default='tdd', choices=['tdd', 'fdd'])
     parser.add_argument('--few_shot', type=int, default=0)
     parser.add_argument('--zero_shot', type=int, default=0)
-    parser.add_argument('--gpt_type', type=str, default='deepseek-1.5b')
+    parser.add_argument('--llm_type', type=str, default='deepseek-1.5b')
     parser.add_argument('--teacher_type', type=str, default='deepseek-7b')
-    parser.add_argument('--gpt_layers', type=int, default=6)
+    parser.add_argument('--llm_layers', type=int, default=6)
     parser.add_argument('--use_lora', type=int, default=1)
     parser.add_argument('--lora_r', type=int, default=8)
     parser.add_argument('--lora_alpha', type=int, default=16)
@@ -89,7 +89,7 @@ def train(args):
     if args.use_kd == 0:
         teacher_type = None
     model = Model(
-        gpt_type=args.gpt_type, teacher_type=teacher_type, gpt_layers=args.gpt_layers,
+        llm_type=args.llm_type, teacher_type=teacher_type, llm_layers=args.llm_layers,
         use_lora=bool(args.use_lora), lora_r=args.lora_r, lora_alpha=args.lora_alpha,
         use_kd=bool(args.use_kd), kd_temperature=args.kd_temperature,
         d_ff=args.d_ff, d_model=args.d_model,

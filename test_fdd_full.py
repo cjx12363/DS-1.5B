@@ -1,4 +1,4 @@
-﻿"""
+"""
 LLM4CP-DS FDD Test Script
 """
 import time
@@ -8,7 +8,7 @@ from data import LoadBatch_ofdm_1, LoadBatch_ofdm_2, noise, Transform_TDD_FDD
 from metrics import NMSELoss, SE_Loss
 from einops import rearrange
 import hdf5storage
-from models.GPT4CP import Model
+from models.LLM4CP import Model
 
 if __name__ == "__main__":
     device = torch.device('cuda:0')
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     test_data_prev_base = hdf5storage.loadmat(prev_path)['H_U_his_test']
     test_data_pred_base = hdf5storage.loadmat(pred_path)['H_D_pre_test']
 
-    model = Model(gpt_type='deepseek-1.5b', use_kd=False, use_lora=True,
+    model = Model(llm_type='deepseek-1.5b', use_kd=False, use_lora=True,
                   d_ff=1536, d_model=1536, pred_len=pred_len, prev_len=prev_len,
                   K=K, UQh=4, UQv=4, BQh=1, BQv=1, use_gpu=1, gpu_id=0).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))

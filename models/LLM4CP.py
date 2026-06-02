@@ -68,9 +68,9 @@ class Res_block(nn.Module):
 
 class Model(nn.Module):
     def __init__(self,
-                 gpt_type='deepseek-1.5b',
+                 llm_type='deepseek-1.5b',
                  teacher_type='deepseek-7b',
-                 gpt_layers=6,
+                 llm_layers=6,
                  use_lora=True,
                  lora_r=8,
                  lora_alpha=16,
@@ -109,7 +109,7 @@ class Model(nn.Module):
         self.enc_in = K * UQh * UQv * BQh * BQv
         self.c_out = K * UQh * UQv * BQh * BQv
         self.enc_embedding1 = DataEmbedding(2 * self.enc_in, self.d_model, embed, freq, dropout)
-        self._init_deepseek_student(gpt_type, gpt_layers, use_lora, lora_r, lora_alpha, lora_dropout)
+        self._init_deepseek_student(llm_type, llm_layers, use_lora, lora_r, lora_alpha, lora_dropout)
         self.teacher = None
         if use_kd and teacher_type is not None:
             self._init_teacher(teacher_type)
@@ -126,7 +126,7 @@ class Model(nn.Module):
         self.RB_e.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
         self.RB_f.append(nn.Conv2d(res_dim, 2, 3, 1, 1))
 
-    def _init_deepseek_student(self, model_name, gpt_layers, use_lora, lora_r, lora_alpha, lora_dropout):
+    def _init_deepseek_student(self, model_name, llm_layers, use_lora, lora_r, lora_alpha, lora_dropout):
         model_map = {
             'deepseek-1.5b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-1.5B',
             'deepseek-7b': 'E:\\models\\DeepSeek-R1-Distill-Qwen-7B',
@@ -136,11 +136,11 @@ class Model(nn.Module):
         self.llm = AutoModel.from_pretrained(
             model_path, trust_remote_code=True, output_hidden_states=True, torch_dtype=torch.float32)
         if hasattr(self.llm, 'layers'):
-            self.llm.layers = self.llm.layers[:gpt_layers]
+            self.llm.layers = self.llm.layers[:llm_layers]
         elif hasattr(self.llm, 'encoder') and hasattr(self.llm.encoder, 'layer'):
-            self.llm.encoder.layer = self.llm.encoder.layer[:gpt_layers]
-        self.gpt_dim = self.llm.config.hidden_size
-        print(f'[Student] Hidden dim: {self.gpt_dim}, Layers: {gpt_layers}')
+            self.llm.encoder.layer = self.llm.encoder.layer[:llm_layers]
+        self.llm_dim = self.llm.config.hidden_size
+        print(f'[Student] Hidden dim: {self.llm_dim}, Layers: {llm_layers}')
         for name, param in self.llm.named_parameters():
             if any(k in name for k in ['self_attn', 'attn', 'input_layernorm', 'norm']):
                 param.requires_grad = True
@@ -167,8 +167,8 @@ class Model(nn.Module):
             param.requires_grad = False
         self.teacher.eval()
         self.teacher.to(device=self.teacher_device)
-        if self.teacher_dim != self.gpt_dim:
-            self.teacher_proj = nn.Linear(self.teacher_dim, self.gpt_dim).to(self.teacher_device)
+        if self.teacher_dim != self.llm_dim:
+            self.teacher_proj = nn.Linear(self.teacher_dim, self.llm_dim).to(self.teacher_device)
         else:
             self.teacher_proj = nn.Identity()
 
@@ -197,8 +197,8 @@ class Model(nn.Module):
 
     def _llm_forward(self, enc_out):
         enc_out = self.predict_linear_pre(enc_out.permute(0, 2, 1)).permute(0, 2, 1)
-        if enc_out.shape[-1] < self.gpt_dim:
-            enc_out = F.pad(enc_out, (0, self.gpt_dim - enc_out.shape[-1]))
+        if enc_out.shape[-1] < self.llm_dim:
+            enc_out = F.pad(enc_out, (0, self.llm_dim - enc_out.shape[-1]))
         llm = self.llm
         dec_out = llm(inputs_embeds=enc_out).last_hidden_state
         dec_out = dec_out[:, :, :self.d_ff]
