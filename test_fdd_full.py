@@ -5,7 +5,7 @@ import time
 import argparse
 import torch
 import numpy as np
-from data import LoadBatch_ofdm_1, LoadBatch_ofdm_2, noise, Transform_TDD_FDD
+from data import LoadBatch_ofdm_2, noise, Transform_TDD_FDD
 from metrics import NMSELoss, SE_Loss
 from einops import rearrange
 import hdf5storage
