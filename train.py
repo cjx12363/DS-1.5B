@@ -6,13 +6,13 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from data import Dataset_Pro
-from models.LLM4CP import Model
+from models.model import Model
 import numpy as np
 import argparse
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='LLM4CP-DS Training')
+    parser = argparse.ArgumentParser(description='CSI Prediction Training')
     parser.add_argument('--mode', type=str, default='tdd', choices=['tdd', 'fdd'])
     parser.add_argument('--few_shot', type=int, default=0)
     parser.add_argument('--zero_shot', type=int, default=0)
@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--train_t_path', type=str, default='./data/train/H_U_pre_train.mat')
     parser.add_argument('--train_t_path_fdd', type=str, default='./data/train/H_D_pre_train.mat')
     parser.add_argument('--save_dir', type=str, default='./Weights')
-    parser.add_argument('--save_name', type=str, default='LLM4CP_DS.pth')
+    parser.add_argument('--save_name', type=str, default='model.pth')
     parser.add_argument('--resume', type=str, default=None)
     args = parser.parse_args()
     if args.teacher_type.lower() == 'none':

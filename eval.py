@@ -8,7 +8,7 @@
 import argparse, os, time, numpy as np, torch
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 from eval_utils import *
-from models.LLM4CP import Model
+from models.model import Model
 
 
 def qam_mod(bits, mo):
@@ -35,7 +35,7 @@ def ber(tx, rx_sym, mo, nv):
 
 
 def load_model(device, mode, P, L, K):
-    ckpt = f'./Weights/{"U2D_" if mode=="fdd" else ""}LLM4CP_DS.pth'
+    ckpt = f'./Weights/{"U2D_" if mode=="fdd" else ""}model.pth'
     m = Model(llm_type='deepseek-1.5b', use_kd=False, use_lora=True, d_ff=1536, d_model=1536,
               pred_len=L, prev_len=P, K=K, UQh=4, UQv=4, BQh=1, BQv=1, use_gpu=1, gpu_id=0).to(device)
     m.load_state_dict(torch.load(ckpt, map_location=device)); m.eval()
