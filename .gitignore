@@ -40,3 +40,7 @@ Thumbs.db
 *.pdf
 # dataset_generation/
 dataset_generation/QuaDRiGa-main/
+
+# Evaluation outputs
+result/
+*.csv
