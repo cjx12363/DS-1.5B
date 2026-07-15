@@ -1,6 +1,6 @@
 """MIMO 评估: SE / BER / Rate / NMSE，统一入口
 用法:
-  python eval.py --task se    --mode tdd --scenario UMa
+  python eval.py --task se    --mode tdd --scenario UMa  [--combining mrc|egc]
   python eval.py --task ber   --mode tdd --modulation QPSK
   python eval.py --task rate  --mode fdd --scenario UMa
   python eval.py --task nmse  --mode tdd --scenario UMa
@@ -9,6 +9,9 @@ import argparse, os, time, numpy as np, torch
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 from eval_utils import *
 from models.model import Model
+
+# Make get_combining_funcs explicitly available (avoid *-import ambiguity)
+from eval_utils import get_combining_funcs
 
 
 def qam_mod(bits, mo):
@@ -56,7 +59,8 @@ def task_se(args, device):
     his_raw = load_mat(f'./data/test/{args.scenario}_H_U_his_test.mat', 'H_U_his')
     pre_raw = load_mat(f'./data/test/{args.scenario}_H_{tag}_pre_test.mat', f'H_{tag}_pre')
     model = load_model(device, args.mode, P, L, K)
-    print(f'SE | {args.mode.upper()} {args.scenario} SNR={args.snr_dl}dB | Nt=16 Nr_eff=8')
+    sinr_fn, se_fn = get_combining_funcs(args.combining)
+    print(f'SE ({args.combining.upper()}) | {args.mode.upper()} {args.scenario} SNR={args.snr_dl}dB | Nt=16 Nr_eff=8')
 
     results = []
     for sp in range(10):
@@ -75,9 +79,9 @@ def task_se(args, device):
             for b in range(n):
                 wp = mrt_precoder(perf[b,t]); wd = mrt_precoder(pred[b,t]); wn = mrt_precoder(Hn[b,t])
                 nv = noise_calibration(Ht[b,t], wp, sl)
-                sp_s.append(mrc_se(Ht[b,t], wp, nv))
-                sd_s.append(mrc_se(Ht[b,t], wd, nv))
-                sn_s.append(mrc_se(Ht[b,t], wn, nv))
+                sp_s.append(se_fn(Ht[b,t], wp, nv))
+                sd_s.append(se_fn(Ht[b,t], wd, nv))
+                sn_s.append(se_fn(Ht[b,t], wn, nv))
         r = {'speed':(sp+1)*10, 'p':np.mean(sp_s), 'd':np.mean(sd_s), 'n':np.mean(sn_s)}
         r['d%']=r['d']/r['p']*100; r['n%']=r['n']/r['p']*100
         results.append(r)
@@ -98,7 +102,8 @@ def task_ber(args, device):
     his_raw = load_mat(f'./data/test/{args.scenario}_H_U_his_test.mat', 'H_U_his')
     pre_raw = load_mat(f'./data/test/{args.scenario}_H_{tag}_pre_test.mat', f'H_{tag}_pre')
     model = load_model(device, args.mode, P, L, K)
-    print(f'BER | {args.mode.upper()} {args.scenario} {args.modulation} SNR={args.snr_dl}dB')
+    sinr_fn, se_fn = get_combining_funcs(args.combining)
+    print(f'BER ({args.combining.upper()}) | {args.mode.upper()} {args.scenario} {args.modulation} SNR={args.snr_dl}dB')
 
     results = []
     for sp in range(10):
@@ -117,7 +122,7 @@ def task_ber(args, device):
             for b in range(n):
                 wp=mrt_precoder(perf[b,t]); wd=mrt_precoder(pred[b,t]); wn=mrt_precoder(Hn[b,t])
                 nv=noise_calibration(Ht[b,t], wp, sl)
-                sip=mrc_sinr(Ht[b,t], wp, nv); sid=mrc_sinr(Ht[b,t], wd, nv); sin_=mrc_sinr(Ht[b,t], wn, nv)
+                sip=sinr_fn(Ht[b,t], wp, nv); sid=sinr_fn(Ht[b,t], wd, nv); sin_=sinr_fn(Ht[b,t], wn, nv)
                 sp_s.extend(np.log2(1+sip)); sd_s.extend(np.log2(1+sid)); sn_s.extend(np.log2(1+sin_))
                 nb=args.n_bits//K
                 for k in range(K):
@@ -142,7 +147,8 @@ def task_rate(args, device):
     his_raw = load_mat(f'./data/test/{args.scenario}_H_U_his_test.mat', 'H_U_his')
     pre_raw = load_mat(f'./data/test/{args.scenario}_H_{tag}_pre_test.mat', f'H_{tag}_pre')
     model = load_model(device, args.mode, P, L, K)
-    print(f'Rate | {args.mode.upper()} {args.scenario} SNR={args.snr}dB')
+    sinr_fn, _ = get_combining_funcs(args.combining)
+    print(f'Rate ({args.combining.upper()}) | {args.mode.upper()} {args.scenario} SNR={args.snr}dB')
 
     rp_all, rd_all, rn_all = [], [], []
     for sp in range(10):
@@ -161,9 +167,9 @@ def task_rate(args, device):
             gp = np.mean([noise_calibration(Ht[b,t], wp[b], sl)*sl for b in range(n)])
             nv = gp/sl
             for b in range(n):
-                rp_all.append(np.log2(1+mrc_sinr(Ht[b,t], wp[b], nv)))
-                rd_all.append(np.log2(1+mrc_sinr(Ht[b,t], wd[b], nv)))
-                rn_all.append(np.log2(1+mrc_sinr(Ht[b,t], wn[b], nv)))
+                rp_all.append(np.log2(1+sinr_fn(Ht[b,t], wp[b], nv)))
+                rd_all.append(np.log2(1+sinr_fn(Ht[b,t], wd[b], nv)))
+                rn_all.append(np.log2(1+sinr_fn(Ht[b,t], wn[b], nv)))
         print(f'  speed {sp+1}/10')
 
     rp=np.mean(np.concatenate(rp_all),0); rd=np.mean(np.concatenate(rd_all),0); rn=np.mean(np.concatenate(rn_all),0)
@@ -189,7 +195,8 @@ def task_nmse(args, device):
     his_raw = load_mat(f'./data/test/{args.scenario}_H_U_his_test.mat', 'H_U_his')
     pre_raw = load_mat(f'./data/test/{args.scenario}_H_{tag}_pre_test.mat', f'H_{tag}_pre')
     model = load_model(device, args.mode, P, L, K)
-    print(f'NMSE | {args.mode.upper()} {args.scenario} SNR={args.snr_dl}dB')
+    sinr_fn, se_fn = get_combining_funcs(args.combining)
+    print(f'NMSE ({args.combining.upper()}) | {args.mode.upper()} {args.scenario} SNR={args.snr_dl}dB')
 
     nmse_all, se_all = [], []
     for sp in range(10):
@@ -215,9 +222,9 @@ def task_nmse(args, device):
                     for b in range(bs):
                         wp=mrt_precoder(perf[b,t]); wd=mrt_precoder(pred[b,t]); wn=mrt_precoder(Hn[c*bs+b,t])
                         nv=noise_calibration(Ht[c*bs+b,t], wp, sl)
-                        sp_s.append(mrc_se(Ht[c*bs+b,t], wp, nv))
-                        sd_s.append(mrc_se(Ht[c*bs+b,t], wd, nv))
-                        sn_s.append(mrc_se(Ht[c*bs+b,t], wn, nv))
+                        sp_s.append(se_fn(Ht[c*bs+b,t], wp, nv))
+                        sd_s.append(se_fn(Ht[c*bs+b,t], wd, nv))
+                        sn_s.append(se_fn(Ht[c*bs+b,t], wn, nv))
         nv=np.nanmean(ns); sp=np.nanmean(sp_s); sd=np.nanmean(sd_s); sn_=np.nanmean(sn_s)
         nmse_all.append(nv); se_all.append(sd/sp)
         print(f'  speed {sp}: NMSE={nv:.6f} | P={sp:.3f} D={sd:.3f} ({sd/sp*100:.1f}%) N={sn_:.3f}')
@@ -232,6 +239,8 @@ if __name__ == '__main__':
     parser.add_argument('--task', type=str, required=True, choices=['se','ber','rate','nmse','all'])
     parser.add_argument('--mode', type=str, default='tdd', choices=['tdd','fdd'])
     parser.add_argument('--scenario', type=str, default='UMa', choices=['UMa','UMi'])
+    parser.add_argument('--combining', type=str, default='mrc', choices=['mrc','egc'],
+                        help='Receiver combining method: mrc (max-ratio) or egc (equal-gain)')
     parser.add_argument('--modulation', type=str, default='QPSK', choices=['QPSK','16QAM','64QAM'])
     parser.add_argument('--snr_dl', type=int, default=10)
     parser.add_argument('--snr', type=float, default=10.0)

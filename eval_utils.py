@@ -1,4 +1,4 @@
-"""MIMO 评估公共工具：数据加载、MRC SE/BER 计算"""
+"""MIMO 评估公共工具：数据加载、MRC/EGC SE/BER 计算（Nr=4, 无双极化）"""
 import numpy as np
 import h5py
 from einops import rearrange
@@ -36,8 +36,8 @@ def to_complex(r, B, T, K, Nt, Npol=2):
 
 
 def full_mimo_channel(data):
-    """data: (1, samples, time, K, 4, 4, 4, 2) → (samples, time, K, Nt=16, Nr_eff=8) complex"""
-    return rearrange(data, 'v b l k a_row a_col rx pol -> (v b) l k (a_row a_col) (rx pol)')
+    """data: (1, samples, time, K, 4, 4, 4, 2) → (samples, time, K, Nt=16, Nr=4) complex (no dual-pol)"""
+    return rearrange(data.mean(axis=-1), 'v b l k a_row a_col rx -> (v b) l k (a_row a_col) rx')
 
 
 def mrt_precoder(h_collapsed):
@@ -55,6 +55,28 @@ def mrc_sinr(H_true, w, noise_var):
 
 def mrc_se(H_true, w, noise_var):
     return np.sum(np.log2(1 + mrc_sinr(H_true, w, noise_var)))
+
+
+def egc_sinr(H_true, w, noise_var):
+    """H_true: (K, Nt, Nr_eff), w: (K, Nt) → (K,) SINR linear (EGC)
+    EGC: equal-gain combining — align phases, equal amplitude weights.
+    SINR = (sum_i |h_eff_i|)^2 / (Nr * sigma^2),  h_eff = H^H @ w
+    """
+    K = H_true.shape[0]
+    Nr = H_true.shape[-1]
+    rx = np.array([np.sum(np.abs(H_true[k].T.conj() @ w[k])) ** 2 / Nr for k in range(K)])
+    return rx / noise_var
+
+
+def egc_se(H_true, w, noise_var):
+    return np.sum(np.log2(1 + egc_sinr(H_true, w, noise_var)))
+
+
+def get_combining_funcs(combining='mrc'):
+    """Return (sinr_func, se_func) for the chosen combining method."""
+    if combining == 'egc':
+        return egc_sinr, egc_se
+    return mrc_sinr, mrc_se
 
 
 def noise_calibration(H_true, w, snr_lin):
