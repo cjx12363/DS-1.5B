@@ -35,8 +35,8 @@ test_data/
 .DS_Store
 Thumbs.db
 
-# Documents
-*.docx
+# Documents (paper committed separately)
+# *.docx
 *.pdf
 # dataset_generation/
 dataset_generation/QuaDRiGa-main/
@@ -44,3 +44,10 @@ dataset_generation/QuaDRiGa-main/
 # Evaluation outputs
 result/
 *.csv
+
+# One-off / experimental scripts
+profile_*.py
+run_baselines.py
+test_all_baselines.py
+test_author_weights.py
+complexity_comparison.py
